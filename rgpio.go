@@ -23,4 +23,5 @@ func main() {
 		pin.Toggle()
 		time.Sleep(time.Second)
 	}
+	pin.Low()
 }
