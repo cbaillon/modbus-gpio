@@ -1,2 +1,3 @@
-# rgpio
-Remote GPIO Control
+# modbus-gpio
+Remote GPIO Control via Modbus
+
