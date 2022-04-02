@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestIsConfiguredAndIsAllowed(t *testing.T) {
 	var gp gpioPort
@@ -40,6 +44,7 @@ func TestIsOpen(t *testing.T) {
 	}
 
 }
+
 func TestSetPinAsCoil(t *testing.T) {
 	var gp gpioPort
 	err := gp.Open()
@@ -47,5 +52,8 @@ func TestSetPinAsCoil(t *testing.T) {
 		t.Errorf("Error while opening: %s", err)
 		return
 	}
+	assert.Equal(t, len(gp.pins), 0, "length of pins map should be 0 just after opening.")
 	gp.SetPinAsCoil(17)
+	assert.Equal(t, len(gp.pins), 1, "length of pins map should 1 after calling SetPinAsCoil once.")
+	assert.Equal(t, int(gp.pins[17].rpioPin), 17, "pin at index x should be x (here: 17)")
 }
