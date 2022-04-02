@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/stianeikeland/go-rpio"
 )
 
@@ -24,9 +26,11 @@ func (g gpioPort) IsAllowed(gpioPin uint8) bool {
 }
 
 // Requires g.IsOpen()
-func (g gpioPort) SetPinAsCoil(gpioPin uint8) error {
+func (g *gpioPort) SetPinAsCoil(gpioPin uint8) error {
 	p := rpio.Pin(gpioPin)
 	p.Output()
+	fmt.Println("g: ", g, "g.pins:", g.pins)
+	//g.pins[gpioPin] = pin{allowed: true, rpioPin: p}
 	g.pins[gpioPin] = pin{allowed: true, rpioPin: p}
 	return nil
 }
@@ -35,6 +39,7 @@ func (g *gpioPort) Open() error {
 	if err := rpio.Open(); err != nil {
 		return err
 	}
+	g.pins = make(map[uint8]pin)
 	g.open = true
 	return nil
 }
