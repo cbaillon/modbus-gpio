@@ -38,10 +38,11 @@ func (g *gpioPort) Open() error {
 	return nil
 }
 
-func (g gpioPort) Close() error {
+func (g *gpioPort) Close() error {
 	if err := rpio.Close(); err != nil {
 		return err
 	}
+	g.open = false
 	return nil
 }
 
