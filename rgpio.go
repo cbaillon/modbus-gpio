@@ -24,4 +24,5 @@ func main() {
 		time.Sleep(time.Second)
 	}
 	pin.Low()
+	server.start_erver()
 }

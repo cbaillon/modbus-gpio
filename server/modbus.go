@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -79,6 +79,7 @@ type exampleHandler struct {
 	// (1 goroutine per client)
 	lock sync.RWMutex
 
+	port gpioconfig.gpioPort
 	// simple uptime counter, incremented in the main() above and exposed
 	// as a 32-bit input register (2 consecutive 16-bit modbus registers).
 	uptime uint32
