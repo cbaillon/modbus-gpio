@@ -42,6 +42,10 @@ func TestIsOpen(t *testing.T) {
 }
 func TestSetPinAsCoil(t *testing.T) {
 	var gp gpioPort
-	//gp.Open()
+	err := gp.Open()
+	if err != nil {
+		t.Errorf("Error while opening: %s", err)
+		return
+	}
 	gp.SetPinAsCoil(17)
 }
