@@ -23,6 +23,7 @@ func (g gpioPort) IsAllowed(gpioPin uint8) bool {
 	return g.pins[gpioPin].allowed
 }
 
+// Requires g.IsOpen()
 func (g gpioPort) SetPinAsCoil(gpioPin uint8) error {
 	p := rpio.Pin(gpioPin)
 	p.Output()
@@ -38,10 +39,11 @@ func (g *gpioPort) Open() error {
 	return nil
 }
 
-func (g gpioPort) Close() error {
+func (g *gpioPort) Close() error {
 	if err := rpio.Close(); err != nil {
 		return err
 	}
+	g.open = false
 	return nil
 }
 
