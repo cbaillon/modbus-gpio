@@ -24,7 +24,7 @@ const (
  */
 
 // run this with go run examples/tcp_server.go
-func main() {
+func start_server() {
 	var server *modbus.ModbusServer
 	var err error
 	var eh *exampleHandler
