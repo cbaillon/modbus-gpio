@@ -1,4 +1,4 @@
-package modbus
+package server
 
 import (
 	"fmt"
