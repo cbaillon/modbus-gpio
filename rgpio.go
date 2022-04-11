@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"time"
-
+	"github.com/cbaillon/modbus-gpio/server"
 	"github.com/stianeikeland/go-rpio"
 )
 
@@ -24,5 +24,5 @@ func main() {
 		time.Sleep(time.Second)
 	}
 	pin.Low()
-	server.start_erver()
+	server.Start_server()
 }

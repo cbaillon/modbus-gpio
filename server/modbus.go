@@ -1,4 +1,4 @@
-package server
+package modbus
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ const (
  */
 
 // run this with go run examples/tcp_server.go
-func start_server() {
+func Start_server() {
 	var server *modbus.ModbusServer
 	var err error
 	var eh *exampleHandler
@@ -79,7 +79,7 @@ type exampleHandler struct {
 	// (1 goroutine per client)
 	lock sync.RWMutex
 
-	port gpioconfig.gpioPort
+	//port gpioconfig.gpioPort
 	// simple uptime counter, incremented in the main() above and exposed
 	// as a 32-bit input register (2 consecutive 16-bit modbus registers).
 	uptime uint32
