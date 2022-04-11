@@ -3,26 +3,22 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
+
+	"github.com/cbaillon/modbus-gpio/gpioconfig"
 	"github.com/cbaillon/modbus-gpio/server"
-	"github.com/stianeikeland/go-rpio"
 )
 
 func main() {
 	fmt.Println("rgpio starting")
-	if err := rpio.Open(); err != nil {
+
+	port := gpioconfig.GPIOPort{}
+
+	if err := port.Open(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	defer rpio.Close()
+	defer port.Close()
 
-	pin := rpio.Pin(17)
-	pin.Output()
-
-	for x := 0; x < 20; x++ {
-		pin.Toggle()
-		time.Sleep(time.Second)
-	}
-	pin.Low()
-	server.Start_server()
+	port.SetPinAsCoil(17)
+	server.Start_server(&port)
 }

@@ -1,4 +1,4 @@
-package modbus
+package server
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cbaillon/modbus-gpio/gpioconfig"
 	"github.com/simonvetter/modbus"
 )
 
@@ -24,14 +25,15 @@ const (
  */
 
 // run this with go run examples/tcp_server.go
-func Start_server() {
+func Start_server(port *gpioconfig.GPIOPort) {
 	var server *modbus.ModbusServer
 	var err error
-	var eh *exampleHandler
+	var eh *modbusGPIOHandler
 	var ticker *time.Ticker
 
 	// create the handler object
-	eh = &exampleHandler{}
+	eh = &modbusGPIOHandler{}
+	eh.port = port
 
 	// create the server object
 	server, err = modbus.NewServer(&modbus.ServerConfiguration{
@@ -73,7 +75,7 @@ func Start_server() {
 }
 
 // Example handler object, passed to the NewServer() constructor above.
-type exampleHandler struct {
+type modbusGPIOHandler struct {
 	// this lock is used to avoid concurrency issues between goroutines, as
 	// handler methods are called from different goroutines
 	// (1 goroutine per client)
@@ -83,6 +85,8 @@ type exampleHandler struct {
 	// simple uptime counter, incremented in the main() above and exposed
 	// as a 32-bit input register (2 consecutive 16-bit modbus registers).
 	uptime uint32
+
+	port *gpioconfig.GPIOPort
 
 	// these are here to hold client-provided (written) values, for both coils and
 	// holding registers
@@ -104,48 +108,50 @@ type exampleHandler struct {
 // read-only.
 // (read them with ./modbus-cli --target tcp://localhost:5502 rc:0+99, write to register n
 // with ./modbus-cli --target tcp://localhost:5502 wr:n:<true|false>)
-func (eh *exampleHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, err error) {
-	if req.UnitId != 1 {
-		// only accept unit ID #1
+func (mh *modbusGPIOHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, err error) {
+	var addr uint8 = uint8(req.Addr)
+	if req.UnitId != 255 {
+		// only accept unit ID #255
 		// note: we're merely filtering here, but we could as well use the unit
 		// ID field to support multiple register maps in a single server.
-		err = modbus.ErrIllegalFunction
+		err = modbus.ErrBadUnitId
+		fmt.Println("HandleCoilds: error, UnitId must be 255, was ", req.UnitId)
 		return
 	}
 
-	// make sure that all registers covered by this request actually exist
-	if int(req.Addr)+int(req.Quantity) > len(eh.coils) {
+	if req.Quantity != 1 {
+		err = modbus.ErrIllegalDataValue
+		fmt.Println("HandleCoilds: error, only requests with quantity of 1 allowed", req.UnitId)
+		return
+	}
+
+	if !mh.port.IsAllowed(uint8(req.Addr)) {
 		err = modbus.ErrIllegalDataAddress
+		fmt.Println("HandleCoilds: error, coils at address", req.Addr, "is not allowed")
 		return
 	}
 
-	// since we're manipulating variables shared between multiple goroutines,
-	// acquire a lock to avoid concurrency issues.
-	eh.lock.Lock()
-	// release the lock upon return
-	defer eh.lock.Unlock()
+	if req.IsWrite {
+		// since we're manipulating variables shared between multiple goroutines,
+		// acquire a lock to avoid concurrency issues.
+		mh.lock.Lock()
+		// release the lock upon return
+		defer mh.lock.Unlock()
 
-	// loop through `req.Quantity` registers, from address `req.Addr` to
-	// `req.Addr + req.Quantity - 1`, which here is conveniently `req.Addr + i`
-	for i := 0; i < int(req.Quantity); i++ {
-		// ignore the write if the current register address is 80
-		if req.IsWrite && int(req.Addr)+i != 80 {
-			// assign the value
-			eh.coils[int(req.Addr)+i] = req.Args[i]
-		}
-		// append the value of the requested register to res so they can be
-		// sent back to the client
-		res = append(res, eh.coils[int(req.Addr)+i])
+		mh.port.SetCoil(addr, req.Args[addr])
+		return
+	} else {
+		err = modbus.ErrIllegalFunction
+		fmt.Println("HandleCoilds: error, read requests are not yet supported")
+		return
 	}
-
-	return
 }
 
 // Discrete input handler method.
 // Note that we're returning ErrIllegalFunction unconditionally.
 // This will cause the client to receive "illegal function", which is the modbus way of
 // reporting that this server does not support/implement the discrete input type.
-func (eh *exampleHandler) HandleDiscreteInputs(req *modbus.DiscreteInputsRequest) (res []bool, err error) {
+func (eh *modbusGPIOHandler) HandleDiscreteInputs(req *modbus.DiscreteInputsRequest) (res []bool, err error) {
 	// this is the equivalent of saying
 	// "discrete inputs are not supported by this device"
 	// (try it with modbus-cli --target tcp://localhost:5502 rdi:1)
@@ -157,7 +163,7 @@ func (eh *exampleHandler) HandleDiscreteInputs(req *modbus.DiscreteInputsRequest
 // Holding register handler method.
 // This method gets called whenever a valid modbus request asking for a holding register
 // operation (either read or write) received by the server.
-func (eh *exampleHandler) HandleHoldingRegisters(req *modbus.HoldingRegistersRequest) (res []uint16, err error) {
+func (eh *modbusGPIOHandler) HandleHoldingRegisters(req *modbus.HoldingRegistersRequest) (res []uint16, err error) {
 	var regAddr uint16
 
 	if req.UnitId != 1 {
@@ -254,7 +260,7 @@ func (eh *exampleHandler) HandleHoldingRegisters(req *modbus.HoldingRegistersReq
 // This method gets called whenever a valid modbus request asking for an input register
 // operation is received by the server.
 // Note that input registers are always read-only as per the modbus spec.
-func (eh *exampleHandler) HandleInputRegisters(req *modbus.InputRegistersRequest) (res []uint16, err error) {
+func (eh *modbusGPIOHandler) HandleInputRegisters(req *modbus.InputRegistersRequest) (res []uint16, err error) {
 	var unixTs_s uint32
 	var minusOne int16 = -1
 
