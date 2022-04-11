@@ -1,8 +1,6 @@
 package gpioconfig
 
 import (
-	"fmt"
-
 	"github.com/stianeikeland/go-rpio"
 )
 
@@ -29,8 +27,6 @@ func (g GPIOPort) IsAllowed(gpioPin uint8) bool {
 func (g *GPIOPort) SetPinAsCoil(gpioPin uint8) error {
 	p := rpio.Pin(gpioPin)
 	p.Output()
-	fmt.Println("g: ", g, "g.pins:", g.pins)
-	//g.pins[gpioPin] = pin{allowed: true, rpioPin: p}
 	g.pins[gpioPin] = pin{allowed: true, rpioPin: p}
 	return nil
 }

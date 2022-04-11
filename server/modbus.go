@@ -28,17 +28,14 @@ const (
 func Start_server(port *gpioconfig.GPIOPort) {
 	var server *modbus.ModbusServer
 	var err error
-	var eh *modbusGPIOHandler
-	var ticker *time.Ticker
+	var eh *modbusGPIOHandler = &modbusGPIOHandler{}
 
-	// create the handler object
-	eh = &modbusGPIOHandler{}
 	eh.port = port
 
 	// create the server object
 	server, err = modbus.NewServer(&modbus.ServerConfiguration{
 		// listen on localhost port 5502
-		URL: "tcp://localhost:5502",
+		URL: "tcp://192.168.4.229:5502",
 		// close idle connections after 30s of inactivity
 		Timeout: 30 * time.Second,
 		// accept 5 concurrent connections max.
@@ -57,21 +54,10 @@ func Start_server(port *gpioconfig.GPIOPort) {
 		os.Exit(1)
 	}
 
-	// increment a 32-bit uptime counter every second.
-	// (this counter is exposed as input registers 200-201 for demo purposes)
-	ticker = time.NewTicker(1 * time.Second)
-	for {
-		<-ticker.C
+	time.Sleep(60 * time.Second)
 
-		// since the handler methods are called from multiple goroutines,
-		// use locking where appropriate to avoid concurrency issues.
-		eh.lock.Lock()
-		eh.uptime++
-		eh.lock.Unlock()
-	}
+	fmt.Printf("end of function")
 
-	// never reached
-	return
 }
 
 // Example handler object, passed to the NewServer() constructor above.
@@ -137,8 +123,8 @@ func (mh *modbusGPIOHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, 
 		mh.lock.Lock()
 		// release the lock upon return
 		defer mh.lock.Unlock()
-
-		mh.port.SetCoil(addr, req.Args[addr])
+		fmt.Println("req.Args: ", req.Args)
+		mh.port.SetCoil(addr, req.Args[0])
 		return
 	} else {
 		err = modbus.ErrIllegalFunction
