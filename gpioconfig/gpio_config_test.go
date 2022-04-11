@@ -7,7 +7,7 @@ import (
 )
 
 func TestIsConfiguredAndIsAllowed(t *testing.T) {
-	var gp gpioPort
+	var gp GPIOPort
 
 	// Make sure alls pins are not configured when
 	// not initialised.
@@ -24,7 +24,7 @@ func TestIsConfiguredAndIsAllowed(t *testing.T) {
 }
 
 func TestIsOpen(t *testing.T) {
-	var gp gpioPort
+	var gp GPIOPort
 	if gp.IsOpen() {
 		t.Error("gpioPort should not be open by default")
 	}
@@ -46,7 +46,7 @@ func TestIsOpen(t *testing.T) {
 }
 
 func TestSetPinAsCoil(t *testing.T) {
-	var gp gpioPort
+	var gp GPIOPort
 	err := gp.Open()
 	if err != nil {
 		t.Errorf("Error while opening: %s", err)
