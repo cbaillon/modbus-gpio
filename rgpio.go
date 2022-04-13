@@ -20,5 +20,7 @@ func main() {
 	defer port.Close()
 
 	port.SetPinAsCoil(17)
+	port.Allow(17)
+
 	server.Start_server(&port)
 }
