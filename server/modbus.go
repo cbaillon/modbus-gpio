@@ -125,12 +125,10 @@ func (mh *modbusGPIOHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, 
 		defer mh.lock.Unlock()
 		fmt.Println("req.Args: ", req.Args)
 		mh.port.SetCoil(addr, req.Args[0])
-		return
 	} else {
-		err = modbus.ErrIllegalFunction
-		fmt.Println("HandleCoilds: error, read requests are not yet supported")
-		return
+		res = append(res, mh.port.GetCoil(uint8(req.Addr)))
 	}
+	return
 }
 
 // Discrete input handler method.
