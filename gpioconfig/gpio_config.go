@@ -27,7 +27,21 @@ func (g GPIOPort) IsAllowed(gpioPin uint8) bool {
 func (g *GPIOPort) SetPinAsCoil(gpioPin uint8) error {
 	p := rpio.Pin(gpioPin)
 	p.Output()
-	g.pins[gpioPin] = pin{allowed: true, rpioPin: p}
+	g.pins[gpioPin] = pin{allowed: false, rpioPin: p}
+	return nil
+}
+
+func (g *GPIOPort) Allow(gpioPin uint8) error {
+	pin := g.pins[gpioPin]
+	pin.allowed = true
+	g.pins[gpioPin] = pin
+	return nil
+}
+
+func (g *GPIOPort) Deny(gpioPin uint8) error {
+	pin := g.pins[gpioPin]
+	pin.allowed = false
+	g.pins[gpioPin] = pin
 	return nil
 }
 
@@ -52,9 +66,8 @@ func (g GPIOPort) IsOpen() bool {
 	return g.open
 }
 
+// Requires g.IsOpen()
 func (g GPIOPort) SetCoil(gpioPin uint8, val bool) {
-	// TODO: return error is not g.open
-
 	if val {
 		g.pins[gpioPin].rpioPin.High()
 	} else {

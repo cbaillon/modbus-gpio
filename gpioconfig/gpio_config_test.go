@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsConfiguredAndIsAllowed(t *testing.T) {
+func TestDefaultIsConfiguredAndIsAllowed(t *testing.T) {
 	var gp GPIOPort
 
 	// Make sure alls pins are not configured when
@@ -52,8 +52,33 @@ func TestSetPinAsCoil(t *testing.T) {
 		t.Errorf("Error while opening: %s", err)
 		return
 	}
-	assert.Equal(t, len(gp.pins), 0, "length of pins map should be 0 just after opening.")
+
+	assert.Equal(t, 0, len(gp.pins), "length of pins map should be 0 just after opening.")
+	assert.Equal(t, false, gp.IsConfigured(17), "pin should not be configured by default")
+	assert.Equal(t, false, gp.IsAllowed(17), "pin should not be allowed by default")
+
 	gp.SetPinAsCoil(17)
-	assert.Equal(t, len(gp.pins), 1, "length of pins map should 1 after calling SetPinAsCoil once.")
-	assert.Equal(t, int(gp.pins[17].rpioPin), 17, "pin at index x should be x (here: 17)")
+	assert.Equal(t, 1, len(gp.pins), "length of pins map should be 1 after calling SetPinAsCoil once.")
+	assert.Equal(t, 17, int(gp.pins[17].rpioPin), "pin at index x should be x (here: 17)")
+	assert.Equal(t, true, gp.IsConfigured(17), "pin should be configured after call of SetPinAsCoil")
+	assert.Equal(t, false, gp.IsAllowed(17), "pin should not be allowed by default if Allow() not explicitly called")
+
+	gp.Allow(17)
+	assert.Equal(t, true, gp.IsConfigured(17), "pin should still be configured after call of Allow")
+	assert.Equal(t, true, gp.IsAllowed(17), "pin should be allowed after call of Allow()")
+
+	gp.Deny(17)
+	assert.Equal(t, true, gp.IsConfigured(17), "pin should still be configured after call of Deny")
+	assert.Equal(t, false, gp.IsAllowed(17), "pin should be denied after call of Deny()")
+
+}
+
+func TestCannotAllowUnconfiguredPin(t *testing.T) {
+	var gp GPIOPort
+	err := gp.Open()
+	if err != nil {
+		t.Errorf("Error while opening: %s", err)
+		return
+	}
+	// to be done
 }
