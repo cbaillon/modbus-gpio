@@ -52,12 +52,19 @@ func (g GPIOPort) IsOpen() bool {
 	return g.open
 }
 
+// Requires g.IsOpen()
 func (g GPIOPort) SetCoil(gpioPin uint8, val bool) {
-	// TODO: return error is not g.open
-
 	if val {
 		g.pins[gpioPin].rpioPin.High()
 	} else {
 		g.pins[gpioPin].rpioPin.Low()
+	}
+}
+
+func (g GPIOPort) GetCoil(GPIOPort uint8) (res bool) {
+	if g.pins[GPIOPort].rpioPin.Read() == rpio.Low {
+		return false
+	} else {
+		return true
 	}
 }
