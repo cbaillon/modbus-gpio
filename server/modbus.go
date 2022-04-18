@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -101,20 +102,17 @@ func (mh *modbusGPIOHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, 
 		// note: we're merely filtering here, but we could as well use the unit
 		// ID field to support multiple register maps in a single server.
 		err = modbus.ErrBadUnitId
-		fmt.Println("HandleCoilds: error, UnitId must be 255, was ", req.UnitId)
-		return
+		return nil, errors.New("HandleCoilds: error, UnitId must be 255, was " + string(req.UnitId))
 	}
 
 	if req.Quantity != 1 {
 		err = modbus.ErrIllegalDataValue
-		fmt.Println("HandleCoilds: error, only requests with quantity of 1 allowed", req.UnitId)
-		return
+		return nil, errors.New("HandleCoilds: error, only requests with quantity of 1 allowed" + fmt.Sprint(req.Quantity))
 	}
 
-	if !mh.port.IsAllowed(uint8(req.Addr)) {
+	if !mh.port.IsAllowed(addr) {
 		err = modbus.ErrIllegalDataAddress
-		fmt.Println("HandleCoilds: error, coils at address", req.Addr, "is not allowed")
-		return
+		return nil, errors.New(string(modbus.ErrIllegalDataAddress) + " - HandleCoils: error, coils at address" + string(addr) + " is not allowed")
 	}
 
 	if req.IsWrite {
@@ -126,7 +124,7 @@ func (mh *modbusGPIOHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, 
 		fmt.Println("req.Args: ", req.Args)
 		mh.port.SetCoil(addr, req.Args[0])
 	} else {
-		res = append(res, mh.port.GetCoil(uint8(req.Addr)))
+		res = append(res, mh.port.GetCoil(addr))
 	}
 	return
 }
@@ -135,12 +133,32 @@ func (mh *modbusGPIOHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, 
 // Note that we're returning ErrIllegalFunction unconditionally.
 // This will cause the client to receive "illegal function", which is the modbus way of
 // reporting that this server does not support/implement the discrete input type.
-func (eh *modbusGPIOHandler) HandleDiscreteInputs(req *modbus.DiscreteInputsRequest) (res []bool, err error) {
-	// this is the equivalent of saying
-	// "discrete inputs are not supported by this device"
-	// (try it with modbus-cli --target tcp://localhost:5502 rdi:1)
-	err = modbus.ErrIllegalFunction
+func (mh *modbusGPIOHandler) HandleDiscreteInputs(req *modbus.DiscreteInputsRequest) (res []bool, err error) {
+	var addr uint8 = uint8(req.Addr)
+	if req.UnitId != 255 {
+		// only accept unit ID #255
+		// note: we're merely filtering here, but we could as well use the unit
+		// ID field to support multiple register maps in a single server.
+		err = modbus.ErrBadUnitId
+		return nil, errors.New("HandleCoilds: error, UnitId must be 255, was " + string(req.UnitId))
+	}
 
+	if req.Quantity != 1 {
+		err = modbus.ErrIllegalDataValue
+		return nil, errors.New("HandleCoilds: error, only requests with quantity of 1 allowed" + fmt.Sprint(req.Quantity))
+	}
+
+	if !mh.port.IsAllowed(addr) {
+		err = modbus.ErrIllegalDataAddress
+		return nil, errors.New(string(modbus.ErrIllegalDataAddress) + " - HandleCoils: error, coils at address" + string(addr) + " is not allowed")
+	}
+
+	val, err := mh.port.GetDiscreteInput(addr)
+
+	if err != nil {
+		return nil, err
+	}
+	res = append(res, val)
 	return
 }
 

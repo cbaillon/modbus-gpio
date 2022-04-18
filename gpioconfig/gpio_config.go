@@ -1,18 +1,30 @@
 package gpioconfig
 
 import (
+	"errors"
+
 	"github.com/stianeikeland/go-rpio"
 )
 
 type pin struct {
-	allowed bool
-	rpioPin rpio.Pin
+	allowed  bool
+	rpioPin  rpio.Pin
+	pullMode PullMode
 }
 
 type GPIOPort struct {
 	pins map[uint8]pin
 	open bool
 }
+
+type PullMode uint8
+
+// Pull Up / Down
+const (
+	PullModeOff PullMode = iota
+	PullModeDown
+	PullModeUp
+)
 
 func (g GPIOPort) IsConfigured(gpioPin uint8) bool {
 	_, err := g.pins[gpioPin]
@@ -29,6 +41,33 @@ func (g *GPIOPort) SetPinAsCoil(gpioPin uint8) error {
 	p.Output()
 	g.pins[gpioPin] = pin{allowed: false, rpioPin: p}
 	return nil
+}
+
+// Requires g.IsOpen()
+// To set a pin as a Discrete Input (in the sense of Modbus terminology), we have
+// to specify the PullMode of the pin. The mode arg must be PullModeDown or PullModeUp.
+// If you don't know how GPIO inputs behavior with pull-up or pull-down modes work,
+// you can find out more with the following article:
+// https://kalitut.com/raspberrypi-gpio-pull-up-pull-down-resistor/
+func (g *GPIOPort) SetPinAsDiscreteInput(gpioPin uint8, mode PullMode) error {
+	if mode != PullModeDown && mode != PullModeUp {
+		return errors.New("invalid mode")
+	}
+
+	p := rpio.Pin(gpioPin)
+	p.Input()
+	if mode == PullModeDown {
+		p.PullDown()
+	} else if mode == PullModeUp {
+		p.PullUp()
+	}
+	g.pins[gpioPin] = pin{allowed: false, rpioPin: p, pullMode: mode}
+	return nil
+}
+
+// Requires g.IsOpen() && gpioPin must be configured as a DiscreteInput
+func (g GPIOPort) GetPinPullMode(gpioPin uint8) PullMode {
+	return g.pins[gpioPin].pullMode
 }
 
 func (g *GPIOPort) Allow(gpioPin uint8) error {
@@ -75,10 +114,38 @@ func (g GPIOPort) SetCoil(gpioPin uint8, val bool) {
 	}
 }
 
-func (g GPIOPort) GetCoil(GPIOPort uint8) (res bool) {
-	if g.pins[GPIOPort].rpioPin.Read() == rpio.Low {
+func (g GPIOPort) GetCoil(gpioPort uint8) (res bool) {
+	if g.pins[gpioPort].rpioPin.Read() == rpio.Low {
 		return false
 	} else {
 		return true
+	}
+}
+
+func (g GPIOPort) GetDiscreteInput(gpioPort uint8) (bool, error) {
+	val := g.pins[gpioPort].rpioPin.Read()
+	pullmode := g.GetPinPullMode(gpioPort)
+
+	switch pullmode {
+	case PullModeDown:
+		switch val {
+		case rpio.Low:
+			return false, nil
+		case rpio.High:
+			return true, nil
+		default:
+			return false, errors.New("bad result of rpio.Read(): " + string(val))
+		}
+	case PullModeUp:
+		switch val {
+		case rpio.Low:
+			return true, nil
+		case rpio.High:
+			return false, nil
+		default:
+			return false, errors.New("bad result of rpio.Read(): " + string(val))
+		}
+	default:
+		return false, errors.New("wrong PullMode:" + string(pullmode))
 	}
 }
