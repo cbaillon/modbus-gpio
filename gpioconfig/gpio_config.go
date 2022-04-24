@@ -2,6 +2,7 @@ package gpioconfig
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/stianeikeland/go-rpio"
 )
@@ -32,7 +33,19 @@ func (g GPIOPort) IsConfigured(gpioPin uint8) bool {
 }
 
 func (g GPIOPort) IsAllowed(gpioPin uint8) bool {
+	fmt.Println("Call of IsAllowed")
+	g.PrintPortConfiguration()
 	return g.pins[gpioPin].allowed
+}
+
+func (g GPIOPort) PrintPortConfiguration() {
+	fmt.Println("***** Port Configuration")
+	fmt.Println("Port open: ", g.open)
+	for k, v := range g.pins {
+        fmt.Printf("%s -> %s\n", k, v)
+    }
+	fmt.Println("************************")
+	
 }
 
 // Requires g.IsOpen()

@@ -26,17 +26,16 @@ const (
  */
 
 // run this with go run examples/tcp_server.go
-func Start_server(port *gpioconfig.GPIOPort) {
+func Start_server(gpioPort *gpioconfig.GPIOPort, ip string, port string) {
 	var server *modbus.ModbusServer
 	var err error
 	var eh *modbusGPIOHandler = &modbusGPIOHandler{}
 
-	eh.port = port
+	eh.port = gpioPort
 
 	// create the server object
 	server, err = modbus.NewServer(&modbus.ServerConfiguration{
-		// listen on localhost port 5502
-		URL: "tcp://192.168.4.229:5502",
+		URL: "tcp://" + ip + ":" + port,
 		// close idle connections after 30s of inactivity
 		Timeout: 30 * time.Second,
 		// accept 5 concurrent connections max.
@@ -97,6 +96,8 @@ type modbusGPIOHandler struct {
 // with ./modbus-cli --target tcp://localhost:5502 wr:n:<true|false>)
 func (mh *modbusGPIOHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, err error) {
 	var addr uint8 = uint8(req.Addr)
+	fmt.Println("Starting HandleCoils. Addr = ", addr)
+	fmt.Println("UnitId = ", req.UnitId)
 	if req.UnitId != 255 {
 		// only accept unit ID #255
 		// note: we're merely filtering here, but we could as well use the unit
@@ -111,8 +112,11 @@ func (mh *modbusGPIOHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, 
 	}
 
 	if !mh.port.IsAllowed(addr) {
+		fmt.Println("addr", addr, " is not allowed. Retunrning an error")
 		err = modbus.ErrIllegalDataAddress
 		return nil, errors.New(string(modbus.ErrIllegalDataAddress) + " - HandleCoils: error, coils at address" + string(addr) + " is not allowed")
+	} else {
+			fmt.Println("Coil at addr ", addr, "is allowed")
 	}
 
 	if req.IsWrite {

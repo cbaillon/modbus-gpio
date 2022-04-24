@@ -23,6 +23,23 @@ func TestDefaultIsConfiguredAndIsAllowed(t *testing.T) {
 	}
 }
 
+func TestIsAllowed(t *testing.T) {
+	var gp GPIOPort
+	err := gp.Open()
+	if err != nil {
+		t.Errorf("Error while opening: %s", err)
+		return
+	}
+
+	assert.Equal(t, false, gp.IsAllowed(22), "pin 22 should not be allowed before configuring")
+	gp.Allow(22)
+	assert.Equal(t, true, gp.IsAllowed(22), "pin 22 should be allowed after configuring")
+
+	assert.Equal(t, false, gp.IsAllowed(27), "pin 27 should not be allowed before configuring")
+	gp.Allow(27)
+	assert.Equal(t, true, gp.IsAllowed(27), "pin 27 should be allowed after configuring")
+}
+
 func TestIsOpen(t *testing.T) {
 	var gp GPIOPort
 	if gp.IsOpen() {
@@ -71,6 +88,7 @@ func TestSetPinAsCoil(t *testing.T) {
 	assert.Equal(t, true, gp.IsConfigured(17), "pin should still be configured after call of Deny")
 	assert.Equal(t, false, gp.IsAllowed(17), "pin should be denied after call of Deny()")
 
+	gp.Close()
 }
 
 func TestCannotAllowUnconfiguredPin(t *testing.T) {

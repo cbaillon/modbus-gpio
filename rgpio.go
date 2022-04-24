@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
+	//"time"
+	
 
 	"github.com/cbaillon/modbus-gpio/gpioconfig"
 	"github.com/cbaillon/modbus-gpio/server"
@@ -20,26 +21,53 @@ func main() {
 	}
 	defer port.Close()
 
-	port.SetPinAsCoil(17)
+	fmt.Println("Port configuration before setting:")
+	port.PrintPortConfiguration()
+
+	port.SetPinAsDiscreteInput(17, gpioconfig.PullModeDown)
 	port.Allow(17)
 
-	port.SetPinAsDiscreteInput(6, gpioconfig.PullModeUp)
-	port.Allow(6)
+	port.SetPinAsCoil(27)
+	port.Allow(27)
 
-	go func() {
+	port.SetPinAsCoil(22)
+	port.Allow(22)
+
+	fmt.Println("Port configuration after setting:")
+	port.PrintPortConfiguration()
+	
+	/* 	go func() {
 		time.Sleep(time.Second * 2)
 		for {
-			pin6, err := port.GetDiscreteInput(6)
+			pin17, err := port.GetDiscreteInput(17)
 			if err != nil {
 				fmt.Println("Error while reading DiscreteInput")
 				os.Exit(1)
 			}
-			if pin6 {
-				fmt.Println("Button is pressed")
+			if pin17 {
+				//fmt.Println("Contact is on")
+			} else {
+				//fmt.Println("Contact is off")
 			}
 			time.Sleep(time.Millisecond * 100)
 		}
 	}()
 
-	server.Start_server(&port)
+
+	b := true
+	for {
+		port.SetCoil(22, b)
+		fmt.Println("Pin 22 set to ", b)
+		
+		time.Sleep(5*time.Second)
+
+		port.SetCoil(27, b)
+		fmt.Println("Pin 27 set to ", b)
+
+		b = ! b
+		time.Sleep(5*time.Second)
+	} */
+
+
+	server.Start_server(&port, "192.168.0.82", "5502")
 }
