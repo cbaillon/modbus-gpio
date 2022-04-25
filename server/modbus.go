@@ -54,10 +54,9 @@ func Start_server(gpioPort *gpioconfig.GPIOPort, ip string, port string) {
 		os.Exit(1)
 	}
 
-	time.Sleep(60 * time.Second)
-
-	fmt.Printf("end of function")
-
+	for {
+		time.Sleep(1 * time.Second)
+	}
 }
 
 // Example handler object, passed to the NewServer() constructor above.
@@ -112,7 +111,7 @@ func (mh *modbusGPIOHandler) HandleCoils(req *modbus.CoilsRequest) (res []bool, 
 	}
 
 	if !mh.port.IsAllowed(addr) {
-		fmt.Println("addr", addr, " is not allowed. Retunrning an error")
+		fmt.Println("addr", addr, " is not allowed. Returning an error")
 		err = modbus.ErrIllegalDataAddress
 		return nil, errors.New(string(modbus.ErrIllegalDataAddress) + " - HandleCoils: error, coils at address" + string(addr) + " is not allowed")
 	} else {
