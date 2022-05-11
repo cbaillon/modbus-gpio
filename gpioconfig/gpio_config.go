@@ -162,3 +162,12 @@ func (g GPIOPort) GetDiscreteInput(gpioPort uint8) (bool, error) {
 		return false, errors.New("wrong PullMode:" + string(pullmode))
 	}
 }
+
+
+func MapDiscreteInputToInputRegister(gpioPort uint8, inputRegisterAddress uint16, bitoffset, uint8){
+
+}
+
+func MapCoilToHoldingRegister(gpioPort uint8, HoldingRegisterAddress uint16, bitoffset, uint8){
+
+}
